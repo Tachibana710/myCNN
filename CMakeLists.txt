@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
 project(myCNN)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 file(GLOB_RECURSE SRC_FILES ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/src/*/*.cpp)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 add_executable(main ${SRC_FILES})
