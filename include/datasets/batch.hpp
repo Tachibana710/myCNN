@@ -15,7 +15,7 @@ struct Batch
 };
 
 template <typename T, int Width, int Height, int BatchNum>
-std::array<Batch<T, Width, Height>, BatchNum> generate_batches(
+inline std::array<Batch<T, Width, Height>, BatchNum> generate_batches(
     std::string images_path, 
     std::string labels_path)
 {

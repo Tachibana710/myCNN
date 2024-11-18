@@ -23,7 +23,7 @@ T readBigEndian(std::ifstream& stream) {
 
 // MNIST画像データを読み込む
 template<class T> requires std::is_floating_point_v<T>
-std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> loadMNISTImages(const std::string& filePath) {
+inline std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> loadMNISTImages(const std::string& filePath) {
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file: " + filePath);
