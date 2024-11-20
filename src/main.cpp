@@ -79,7 +79,7 @@ int main(){
         relu_layer3.forward(affine_layer3.output);
         softmax_layer.forward(relu_layer3.output);
 
-        int max_index = 0;
+        int max_index = -INFINITY;
         float max_value = 0;
         for (int i = 0; i < 10; ++i){
             if (relu_layer3.output(i) > max_value){
