@@ -18,9 +18,9 @@ int main(){
     // auto batchs = datasets::generate_batches<float, 28, 28, 10>(train_images_path, train_labels_path);
 
 
-    layer::AffineLayer<28*28, 28*28, float> affine_layer1;
-    layer::ReLULayer<28*28, float> relu_layer1;
-    layer::AffineLayer<28*28, 100, float> affine_layer2;
+    layer::AffineLayer<28*28, 50, float> affine_layer1;
+    layer::ReLULayer<50, float> relu_layer1;
+    layer::AffineLayer<50, 100, float> affine_layer2;
     layer::ReLULayer<100, float> relu_layer2;
     layer::AffineLayer<100, 10, float> affine_layer3;
     layer::ReLULayer<10, float> relu_layer3;
@@ -32,7 +32,7 @@ int main(){
 
     datasets::Batch<float, 28, 28, 100> batch;
 
-    for (int i=0; i < 1000; i++){
+    for (int i=0; i < 10000; i++){
         datasets::generate_batch<float, 28, 28, 100>(batch, data_pool);
         double softmax_loss_sum = 0;
         for (auto& dat : batch.data){
@@ -82,7 +82,7 @@ int main(){
         int max_index = -INFINITY;
         float max_value = 0;
         for (int i = 0; i < 10; ++i){
-            if (relu_layer3.output(i) > max_value){
+            if (softmax_layer.output(i) > max_value){
                 max_value = softmax_layer.output(i);
                 max_index = i;
             }
