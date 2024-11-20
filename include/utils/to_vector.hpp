@@ -23,9 +23,9 @@ inline Eigen::Vector<T, Width*Height> to_vector(const datasets::SingleData<T, Wi
 
 // Batch用
 // (Width x Height) x batchsizeのvector<SingleData> -> Vector
-template <typename T, int Width, int Height>
-inline Eigen::Vector<T, Eigen::Dynamic> to_vector(const std::vector<datasets::Batch<T, Width, Height>>& batch){
-    Eigen::VectorX<T> vec(Width*Height*batch.data.size());
+template <typename T, int Width, int Height, int BatchSize>
+inline Eigen::Vector<T, Eigen::Dynamic> to_vector(const std::vector<datasets::Batch<T, Width, Height, BatchSize>>& batch){
+    Eigen::Vector<T,Width*Height*BatchSize> vec;
     for (int i = 0; i < batch.data.size(); ++i){
         vec.segment(i*Width*Height, Width*Height) = to_vector(batch.data[i]);
     }
