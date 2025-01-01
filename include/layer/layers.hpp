@@ -23,12 +23,10 @@ public:
     Eigen::MatrixX<T> output;
     Eigen::MatrixX<T> grad;
 
-    int input_dim;
-    int output_dim;
+    const int input_dim;
+    const int output_dim;
 
-    Layer(int input_dim, int output_dim){
-        this->input_dim = input_dim;
-        this->output_dim = output_dim;
+    Layer(int input_dim, int output_dim) : input_dim(input_dim), output_dim(output_dim){
         input = Eigen::MatrixX<T>::Zero(input_dim, 1);
         output = Eigen::MatrixX<T>::Zero(output_dim, 1);
         grad = Eigen::MatrixX<T>::Zero(input_dim, 1);
@@ -51,7 +49,7 @@ public:
         // weights = std::make_shared<Eigen::MatrixX<T>>(Eigen::MatrixX<T>::Random());
         weights = Eigen::MatrixX<T>::Zero(output_dim, input_dim);
         bias = Eigen::MatrixX<T>::Zero(output_dim, 1);
-        
+
         std::random_device seed_gen;
         std::default_random_engine engine(seed_gen());
         std::normal_distribution<T> dist(0.0, std::sqrt(2.0 / this->input_dim));
@@ -97,10 +95,9 @@ public:
     Eigen::MatrixX<T> input;
     Eigen::MatrixX<T> output;
 
-    int dim;
+    const int dim;
 
-    SoftMaxLayer(int input_dim) : Layer<T>(input_dim, input_dim){
-        this->dim  = input_dim;
+    SoftMaxLayer(int input_dim) : Layer<T>(input_dim, input_dim), dim(input_dim){
         input = Eigen::MatrixX<T>::Zero(input_dim, 1);
         output = Eigen::MatrixX<T>::Zero(input_dim, 1);
     }
@@ -136,8 +133,7 @@ template <typename T> requires std::is_floating_point_v<T>
 class ReLULayer : public Layer<T> {
 public:
 
-    ReLULayer(int input_dim) : Layer<T>(input_dim, input_dim){
-        this->dim  = input_dim;
+    ReLULayer(int input_dim) : Layer<T>(input_dim, input_dim), dim(input_dim){
         input = Eigen::MatrixX<T>::Zero(input_dim, 1);
         output = Eigen::MatrixX<T>::Zero(input_dim, 1);
         grad = Eigen::MatrixX<T>::Zero(input_dim, 1);
@@ -146,7 +142,7 @@ public:
     Eigen::MatrixX<T> input;
     Eigen::MatrixX<T> output;
     Eigen::MatrixX<T> grad;
-    int dim;
+    const int dim;
 
     void forward(Eigen::MatrixX<T> input_) override {
         this->input = input_;
