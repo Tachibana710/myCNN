@@ -23,6 +23,10 @@ public:
         layers = layers_;
     }
 
+    Network(std::string json_path){
+        this->load_model(json_path);
+    }
+
     Eigen::VectorX<T> forward(datasets::SingleData<T, Width, Height> data){
         auto flattened_data = utils::to_vector(data);
         layers[0]->forward(flattened_data);
@@ -66,7 +70,7 @@ public:
         return layers.back()->output;
     }
 
-    void save_params(){
+    void save_model(){
         std::ofstream output_file("model.json");
 
         nlohmann::json j;
@@ -113,6 +117,40 @@ public:
 
         output_file << j.dump(4) << std::endl;
 
+    }
+
+    void load_model(std::string json_path){
+        std::ifstream input_file(json_path);
+        nlohmann::json json;
+        input_file >> json;
+
+        layers.clear();
+        for (auto& layer : json["structure"]){
+            if (layer["type"] == "AffineLayer"){
+                layers.push_back(std::make_shared<layer::AffineLayer<T>>(layer["input_dim"], layer["output_dim"]));
+            }else if (layer["type"] == "ReLULayer"){
+                layers.push_back(std::make_shared<layer::ReLULayer<T>>(layer["input_dim"]));
+            }else if (layer["type"] == "SoftMaxLayer"){
+                layers.push_back(std::make_shared<layer::SoftMaxLayer<T>>(layer["input_dim"]));
+            }
+        }
+
+        for (int i = 0; i < layers.size(); ++i){
+            if (json["params"][i]["type"] != "AffineLayer"){
+                continue;
+            }
+            auto affine_layer = std::dynamic_pointer_cast<layer::AffineLayer<T>>(layers[i]);
+            for (int j = 0; j < affine_layer->weights.rows(); ++j){
+                for (int k = 0; k < affine_layer->weights.cols(); ++k){
+                    affine_layer->weights(j, k) = json["params"][i]["weights"][j][k];
+                }
+            }
+            for (int j = 0; j < affine_layer->bias.rows(); ++j){
+                for (int k = 0; k < affine_layer->bias.cols(); ++k){
+                    affine_layer->bias(j, k) = json["params"][i]["bias"][j][k];
+                }
+            }
+        }
     }
 };
 
