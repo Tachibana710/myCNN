@@ -16,13 +16,21 @@
 namespace layer{
 
 template <int InputDim, int OutputDim, typename T> requires std::is_floating_point_v<T>
-class AffineLayer {
+class Layer {
+public:
+    Eigen::Matrix<T, InputDim, 1> input;
+    Eigen::Matrix<T, OutputDim, 1> output;
+    Eigen::Matrix<T, InputDim, 1> grad;
+
+    virtual void forward(Eigen::Matrix<T, InputDim, 1> signal) = 0;
+    virtual void backward(Eigen::Matrix<T, OutputDim, 1> signal) = 0;
+};
+
+template <int InputDim, int OutputDim, typename T> requires std::is_floating_point_v<T>
+class AffineLayer : public Layer<InputDim, OutputDim, T> {
 public:
     std::shared_ptr<Eigen::MatrixX<T>> weights;
     Eigen::Matrix<T, OutputDim, 1> bias;
-    Eigen::Matrix<T, InputDim, 1> input;
-    Eigen::Matrix<T, InputDim, 1> grad;
-    Eigen::Matrix<T, OutputDim, 1> output;
 
     Eigen::MatrixX<T> grad_weights;
     int batch_size = 0;
@@ -43,14 +51,14 @@ public:
         grad_weights = Eigen::MatrixX<T>::Zero(OutputDim, InputDim);
     }
 
-    void forward(Eigen::Matrix<T, InputDim, 1> input_){
-        this->input = input_;
-        output = (*weights) * input_ + bias;
+    void forward(Eigen::Matrix<T, InputDim, 1> signal) override {
+        this->input = signal;
+        this->output = (*weights) * signal + bias;
     }
 
-    void backward(Eigen::Matrix<T, OutputDim, 1> signal){
+    void backward(Eigen::Matrix<T, OutputDim, 1> signal) override {
         // Eigen::MatrixX<T> grad_weights = signal * input.transpose();
-        grad_weights += static_cast<Eigen::MatrixX<T>>(signal * input.transpose());
+        grad_weights += static_cast<Eigen::MatrixX<T>>(signal * this->input.transpose());
         batch_size++;
         // (*weights) -= params::learning_rate * static_cast<Eigen::MatrixX<T>>(signal * input.transpose());
         bias -= params::learning_rate * signal;
@@ -74,8 +82,8 @@ public:
     Eigen::Matrix<T, Dim, 1> output;
     double loss;
 
-    void forward(Eigen::Matrix<T, Dim, 1> input){
-        this->input = input;
+    void forward(Eigen::Matrix<T, Dim, 1> signal){
+        this->input = signal;
         T sum = 0;
         T max = input.maxCoeff();
         for (int i = 0; i < Dim; ++i){
