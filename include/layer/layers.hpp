@@ -9,10 +9,6 @@
 
 #include "param.hpp"
 
-// class Layer {
-
-// Todo: batch処理に対応させる
-
 namespace layer{
 
 template <typename T> requires std::is_floating_point_v<T>
@@ -39,7 +35,7 @@ public:
 template <typename T> requires std::is_floating_point_v<T>
 class AffineLayer : public Layer<T> {
 public:
-    // std::shared_ptr<Eigen::MatrixX<T>> weights;
+
     Eigen::MatrixX<T> weights;
     Eigen::MatrixX<T> bias;
 
@@ -47,7 +43,6 @@ public:
     int batch_size = 0;
 
     AffineLayer(int input_dim, int output_dim) : Layer<T>(input_dim, output_dim){
-        // weights = std::make_shared<Eigen::MatrixX<T>>(Eigen::MatrixX<T>::Random());
         weights = Eigen::MatrixX<T>::Zero(output_dim, input_dim);
         bias = Eigen::MatrixX<T>::Zero(output_dim, 1);
 
@@ -71,10 +66,8 @@ public:
     }
 
     void backward(Eigen::MatrixX<T> signal) override {
-        // Eigen::MatrixX<T> grad_weights = signal * input.transpose();
         grad_weights += static_cast<Eigen::MatrixX<T>>(signal * this->input.transpose());
         batch_size++;
-        // (*weights) -= params::learning_rate * static_cast<Eigen::MatrixX<T>>(signal * input.transpose());
         bias -= params::learning_rate * signal;
         this->grad = weights.transpose() * signal;
     }
@@ -84,8 +77,37 @@ public:
         grad_weights.setZero();
         batch_size = 0;
     }
-        
-    
+         
+};
+
+template <typename T> requires std::is_floating_point_v<T>
+class ReLULayer : public Layer<T> {
+public:
+
+    const int dim;
+
+    ReLULayer(int input_dim) : Layer<T>(input_dim, input_dim), dim(input_dim){}
+
+    void forward(Eigen::MatrixX<T> input_) override {
+        this->input = input_;
+        for (int i = 0; i < dim; ++i){
+            if (this->input(i) > 0){
+                this->output(i) = input_(i);
+            } else {
+                this->output(i) = 0;
+            }
+        }
+    }
+
+    void backward(Eigen::MatrixX<T> grad_) override {
+        for (int i = 0; i < dim; ++i){
+            if (this->input(i) > 0){
+                this->grad(i) = grad_(i);
+            } else {
+                this->grad(i) = 0;
+            }
+        }
+    }
 };
 
 template <typename T> requires std::is_floating_point_v<T>
@@ -127,38 +149,6 @@ public:
         double eps = 1e-8;
         for (int i = 0; i < dim; ++i){
             this->loss -= desired_output(i) * std::log(this->output(i) + eps);
-        }
-    }
-};
-
-template <typename T> requires std::is_floating_point_v<T>
-class ReLULayer : public Layer<T> {
-public:
-
-    ReLULayer(int input_dim) : Layer<T>(input_dim, input_dim), dim(input_dim){}
-
-    const int dim;
-
-    void forward(Eigen::MatrixX<T> input_) override {
-        this->input = input_;
-        for (int i = 0; i < dim; ++i){
-            if (this->input(i) > 0){
-                this->output(i) = input_(i);
-            } else {
-                // output(i) = 0.01 * input_(i);
-                this->output(i) = 0;
-            }
-        }
-    }
-
-    void backward(Eigen::MatrixX<T> grad_) override {
-        for (int i = 0; i < dim; ++i){
-            if (this->input(i) > 0){
-                this->grad(i) = grad_(i);
-            } else {
-                // this->grad(i) = 0.01 * grad_(i);
-                this->grad(i) = 0;
-            }
         }
     }
 };
