@@ -2,3 +2,4 @@
 build/
 .vscode/
 log_loss.csv
+model.json

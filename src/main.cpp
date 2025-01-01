@@ -53,6 +53,8 @@ int main(){
     log_file.close();
     std::cout << std::endl;
 
+    my_network.save_params();
+
     // accuracy check
 
     int correct = 0;

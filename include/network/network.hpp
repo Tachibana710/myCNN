@@ -5,6 +5,8 @@
 #include <memory>
 #include <iostream>
 
+#include <nlohmann/json.hpp>
+
 #include "datasets/single_data.hpp"
 #include "layer/layers.hpp"
 
@@ -62,6 +64,55 @@ public:
             layers[i]->forward(layers[i-1]->output);
         }
         return layers.back()->output;
+    }
+
+    void save_params(){
+        std::ofstream output_file("model.json");
+
+        nlohmann::json j;
+
+        for (auto& layer : layers){
+            j["structure"].push_back(
+                {
+                    {"type", layer->name},
+                    {"input_dim", layer->input_dim},
+                    {"output_dim", layer->output_dim}
+                }
+            );
+        }
+
+        std::function<nlohmann::json(Eigen::MatrixX<T>)> matrix2json = [](Eigen::MatrixX<T> mat){
+            nlohmann::json j;
+            for (int i = 0; i < mat.rows(); ++i){
+                nlohmann::json row;
+                for (int j = 0; j < mat.cols(); ++j){
+                    row.push_back(mat(i, j));
+                }
+                j.push_back(row);
+            }
+            return j;
+        };
+
+        for (auto& layer : layers){
+            if (typeid(*layer) != typeid(layer::AffineLayer<T>)){
+                j["params"].push_back({
+                    {"type", layer->name}
+                });
+                continue;
+            }else{
+                auto affine_layer = std::dynamic_pointer_cast<layer::AffineLayer<T>>(layer);
+                j["params"].push_back(
+                    {
+                        {"type", layer->name},
+                        {"weights", matrix2json(affine_layer->weights)},
+                        {"bias", matrix2json(affine_layer->bias)}
+                    }
+                );
+            }
+        }
+
+        output_file << j.dump(4) << std::endl;
+
     }
 };
 

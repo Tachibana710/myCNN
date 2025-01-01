@@ -15,6 +15,8 @@ template <typename T> requires std::is_floating_point_v<T>
 class Layer {
 public:
 
+    std::string name;
+
     Eigen::MatrixX<T> input;
     Eigen::MatrixX<T> output;
     Eigen::MatrixX<T> grad;
@@ -43,6 +45,8 @@ public:
     int batch_size = 0;
 
     AffineLayer(int input_dim, int output_dim) : Layer<T>(input_dim, output_dim){
+        this->name = "AffineLayer";
+
         weights = Eigen::MatrixX<T>::Zero(output_dim, input_dim);
         bias = Eigen::MatrixX<T>::Zero(output_dim, 1);
 
@@ -86,7 +90,9 @@ public:
 
     const int dim;
 
-    ReLULayer(int input_dim) : Layer<T>(input_dim, input_dim), dim(input_dim){}
+    ReLULayer(int input_dim) : Layer<T>(input_dim, input_dim), dim(input_dim){
+        this->name = "ReLULayer";
+    }
 
     void forward(Eigen::MatrixX<T> input_) override {
         this->input = input_;
@@ -125,7 +131,9 @@ public:
 
     const int dim;
 
-    SoftMaxLayer(int input_dim) : OutputLayer<T>(input_dim, input_dim), dim(input_dim){}
+    SoftMaxLayer(int input_dim) : OutputLayer<T>(input_dim, input_dim), dim(input_dim){
+        this->name = "SoftMaxLayer";
+    }
 
 
     void forward(Eigen::MatrixX<T> signal) override {
