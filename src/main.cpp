@@ -18,13 +18,20 @@ int main(){
     // auto batchs = datasets::generate_batches<float, 28, 28, 10>(train_images_path, train_labels_path);
 
 
-    layer::AffineLayer<28*28, 50, float> affine_layer1;
-    layer::ReLULayer<50, float> relu_layer1;
-    layer::AffineLayer<50, 100, float> affine_layer2;
-    layer::ReLULayer<100, float> relu_layer2;
-    layer::AffineLayer<100, 10, float> affine_layer3;
-    layer::ReLULayer<10, float> relu_layer3;
-    layer::SoftMaxLayer<10, float> softmax_layer;
+    // layer::AffineLayer<28*28, 50, float> affine_layer1;
+    // layer::ReLULayer<50, float> relu_layer1;
+    // layer::AffineLayer<50, 100, float> affine_layer2;
+    // layer::ReLULayer<100, float> relu_layer2;
+    // layer::AffineLayer<100, 10, float> affine_layer3;
+    // layer::ReLULayer<10, float> relu_layer3;
+    // layer::SoftMaxLayer<10, float> softmax_layer;
+    auto affine_layer1 = layer::AffineLayer<float>(28*28, 50);
+    auto relu_layer1 = layer::ReLULayer<float>(50);
+    auto affine_layer2 = layer::AffineLayer<float>(50, 100);
+    auto relu_layer2 = layer::ReLULayer<float>(100);
+    auto affine_layer3 = layer::AffineLayer<float>(100, 10);
+    auto relu_layer3 = layer::ReLULayer<float>(10);
+    auto softmax_layer = layer::SoftMaxLayer<float>(10);
 
     std::fstream log_file;
     log_file.open("log_loss.csv", std::ios::out);
