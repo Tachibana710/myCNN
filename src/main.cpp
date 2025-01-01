@@ -7,6 +7,8 @@
 #include "layer/layers.hpp"
 #include "utils/to_vector.hpp"
 
+#include "network/network.hpp"
+
 int main(){
     std::string base_path = std::string(__FILE__).substr(0, std::string(__FILE__).find_last_of("/\\"));
     std::string dataset_path = base_path + "/../datasets/mnist";
@@ -25,13 +27,16 @@ int main(){
     // layer::AffineLayer<100, 10, float> affine_layer3;
     // layer::ReLULayer<10, float> relu_layer3;
     // layer::SoftMaxLayer<10, float> softmax_layer;
-    auto affine_layer1 = layer::AffineLayer<float>(28*28, 50);
-    auto relu_layer1 = layer::ReLULayer<float>(50);
-    auto affine_layer2 = layer::AffineLayer<float>(50, 100);
-    auto relu_layer2 = layer::ReLULayer<float>(100);
-    auto affine_layer3 = layer::AffineLayer<float>(100, 10);
-    auto relu_layer3 = layer::ReLULayer<float>(10);
-    auto softmax_layer = layer::SoftMaxLayer<float>(10);
+
+    auto my_network = network::Network<float, 28, 28>({
+        std::make_shared<layer::AffineLayer<float>>(28*28, 50),
+        std::make_shared<layer::ReLULayer<float>>(50),
+        std::make_shared<layer::AffineLayer<float>>(50, 100),
+        std::make_shared<layer::ReLULayer<float>>(100),
+        std::make_shared<layer::AffineLayer<float>>(100, 10),
+        std::make_shared<layer::ReLULayer<float>>(10),
+        std::make_shared<layer::SoftMaxLayer<float>>(10)
+    });
 
     std::fstream log_file;
     log_file.open("log_loss.csv", std::ios::out);
@@ -41,56 +46,26 @@ int main(){
 
     for (int i=0; i < 10000; i++){
         datasets::generate_batch<float, 28, 28, 100>(batch, data_pool);
-        double softmax_loss_sum = 0;
         for (auto& dat : batch.data){
-            auto flattened_data = utils::to_vector(dat);
-            affine_layer1.forward(flattened_data);
-            relu_layer1.forward(affine_layer1.output);
-            affine_layer2.forward(relu_layer1.output);
-            relu_layer2.forward(affine_layer2.output);
-            affine_layer3.forward(relu_layer2.output);
-            relu_layer3.forward(affine_layer3.output);
-            softmax_layer.forward(relu_layer3.output);
-
-            Eigen::Matrix<float, 10, 1> grad;
-            grad << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-            grad(dat.label) = 1;
-            softmax_layer.calc_loss(grad);
-            softmax_loss_sum += softmax_layer.loss;
-            grad = softmax_layer.output - grad;
-            relu_layer3.backward(grad);
-            affine_layer3.backward(relu_layer3.grad);
-            relu_layer2.backward(affine_layer3.grad);
-            affine_layer2.backward(relu_layer2.grad);
-            relu_layer1.backward(affine_layer2.grad);
-            affine_layer1.backward(relu_layer1.grad);
-            static int count = 0;
-            std::cout << "count:" << count++ << "\r";
+            dat.desired_output = Eigen::MatrixX<float>::Zero(10, 1);
+            dat.desired_output(dat.label) = 1;
         }
-        affine_layer1.update();
-        affine_layer2.update();
-        affine_layer3.update();
-        log_file << softmax_loss_sum / batch.data.size() << std::endl;
-        std::cout << "batch" << i << " finished" << std::endl;
+        double loss = my_network.train(batch);
+        log_file << loss << std::endl;
+        std::cout << "batch " << i << " finished" << std::endl;
     }
+
+    // accuracy check
 
     int correct = 0;
     datasets::generate_batch<float, 28, 28, 100>(batch, data_pool);
     for (auto& dat : batch.data){
-        auto flattened_data = utils::to_vector(dat);
-        affine_layer1.forward(flattened_data);
-        relu_layer1.forward(affine_layer1.output);
-        affine_layer2.forward(relu_layer1.output);
-        relu_layer2.forward(affine_layer2.output);
-        affine_layer3.forward(relu_layer2.output);
-        relu_layer3.forward(affine_layer3.output);
-        softmax_layer.forward(relu_layer3.output);
-
-        int max_index = -INFINITY;
-        float max_value = 0;
+        auto output = my_network.predict(dat);
+        int max_index = 0;
+        float max_value = -INFINITY;
         for (int i = 0; i < 10; ++i){
-            if (softmax_layer.output(i) > max_value){
-                max_value = softmax_layer.output(i);
+            if (output(i) > max_value){
+                max_value = output(i);
                 max_index = i;
             }
         }
@@ -100,69 +75,27 @@ int main(){
     }
     std::cout << "accuracy: " << (float)correct / 100 << std::endl;
 
+    return 0;
 
-    // auto& data = batchs[0].data[0];
 
-    // auto flattened_data = utils::to_vector(data);
-    // for (auto& val : flattened_data){
-    //     val -= 0.5;
-    // }
-    // affine_layer1.forward(flattened_data);
-    // std::cout << "affine_layer1.output" << std::endl;
-    // std::cout << affine_layer1.output << std::endl;
-    // relu_layer1.forward(affine_layer1.output);
-    // std::cout << "relu_layer1.output" << std::endl;
-    // std::cout << relu_layer1.output << std::endl;
-    // affine_layer2.forward(relu_layer1.output);
-    // std::cout << "affine_layer2.output" << std::endl;
-    // std::cout << affine_layer2.output << std::endl;
-    // relu_layer2.forward(affine_layer2.output);
-    // std::cout << "relu_layer2.output" << std::endl;
-    // std::cout << relu_layer2.output << std::endl;
-    // affine_layer3.forward(relu_layer2.output);
-    // std::cout << "affine_layer3.output" << std::endl;
-    // std::cout << affine_layer3.output << std::endl;
-    // relu_layer3.forward(affine_layer3.output);
-    // std::cout << "relu_layer3.output" << std::endl;
-    // std::cout << relu_layer3.output << std::endl;
-    // softmax_layer.forward(relu_layer3.output);
-    // std::cout << "softmax_layer.output" << std::endl;
-    // std::cout << softmax_layer.output << std::endl;
+    // auto affine_layer1 = layer::AffineLayer<float>(28*28, 50);
+    // auto relu_layer1 = layer::ReLULayer<float>(50);
+    // auto affine_layer2 = layer::AffineLayer<float>(50, 100);
+    // auto relu_layer2 = layer::ReLULayer<float>(100);
+    // auto affine_layer3 = layer::AffineLayer<float>(100, 10);
+    // auto relu_layer3 = layer::ReLULayer<float>(10);
+    // auto softmax_layer = layer::SoftMaxLayer<float>(10);
 
-    // // return 0;
-
-    // std::cout << "start training" << std::endl;
-
-    // int correct = 0;
-    // for (auto& dat : batchs[0].data){
-    //     auto flattened_data = utils::to_vector(dat);
-    //     affine_layer1.forward(flattened_data);
-    //     relu_layer1.forward(affine_layer1.output);
-    //     affine_layer2.forward(relu_layer1.output);
-    //     relu_layer2.forward(affine_layer2.output);
-    //     affine_layer3.forward(relu_layer2.output);
-    //     relu_layer3.forward(affine_layer3.output);
-
-    //     int max_index = 0;
-    //     float max_value = 0;
-    //     for (int i = 0; i < 10; ++i){
-    //         if (relu_layer3.output(i) > max_value){
-    //             max_value = softmax_layer.output(i);
-    //             max_index = i;
-    //         }
-    //     }
-    //     if (max_index == dat.label){
-    //         correct++;
-    //     }
-    // }
-    // std::cout << "accuracy: " << (float)correct / batchs[0].data.size() << std::endl;
-    
     // std::fstream log_file;
     // log_file.open("log_loss.csv", std::ios::out);
+    // log_file << "loss" << std::endl;
 
-    // double softmax_loss_sum = 0;
-    // for (int i = 0; i < 500; i++){
-    //     for (auto& dat : batchs[0].data){
+    // datasets::Batch<float, 28, 28, 100> batch;
+
+    // for (int i=0; i < 10000; i++){
+    //     datasets::generate_batch<float, 28, 28, 100>(batch, data_pool);
+    //     double softmax_loss_sum = 0;
+    //     for (auto& dat : batch.data){
     //         auto flattened_data = utils::to_vector(dat);
     //         affine_layer1.forward(flattened_data);
     //         relu_layer1.forward(affine_layer1.output);
@@ -190,44 +123,13 @@ int main(){
     //     affine_layer1.update();
     //     affine_layer2.update();
     //     affine_layer3.update();
-    //     log_file << softmax_loss_sum / batchs[i % 10].data.size() << std::endl;
-    //     softmax_loss_sum = 0;
+    //     log_file << softmax_loss_sum / batch.data.size() << std::endl;
     //     std::cout << "batch" << i << " finished" << std::endl;
     // }
 
-    // flattened_data = utils::to_vector(data);
-    // for (auto& val : flattened_data){
-    //     val -= 0.5;
-    // }
-    // std::cout << "input" << std::endl;
-    // std::cout << flattened_data.transpose() << std::endl;
-    // affine_layer1.forward(flattened_data);
-    // std::cout << "affine_layer1.output" << std::endl;
-    // std::cout << affine_layer1.output.transpose() << std::endl;
-    // relu_layer1.forward(affine_layer1.output);
-    // std::cout << "relu_layer1.output" << std::endl;
-    // std::cout << relu_layer1.output.transpose() << std::endl;
-    // affine_layer2.forward(relu_layer1.output);
-    // std::cout << "affine_layer2.output" << std::endl;
-    // std::cout << affine_layer2.output.transpose() << std::endl;
-    // relu_layer2.forward(affine_layer2.output);
-    // std::cout << "relu_layer2.output" << std::endl;
-    // std::cout << relu_layer2.output.transpose() << std::endl;
-    // affine_layer3.forward(relu_layer2.output);
-    // std::cout << "affine_layer3.output" << std::endl;
-    // std::cout << affine_layer3.output.transpose() << std::endl;
-    // relu_layer3.forward(affine_layer3.output);
-    // std::cout << "relu_layer3.output" << std::endl;
-    // std::cout << relu_layer3.output.transpose() << std::endl;
-    // softmax_layer.forward(relu_layer3.output);
-    // std::cout << "softmax_layer.output" << std::endl;
-    // std::cout << softmax_layer.output.transpose() << std::endl;
-
-    // // return 0;
-
-
-    // correct = 0;
-    // for (auto& dat : batchs[0].data){
+    // int correct = 0;
+    // datasets::generate_batch<float, 28, 28, 100>(batch, data_pool);
+    // for (auto& dat : batch.data){
     //     auto flattened_data = utils::to_vector(dat);
     //     affine_layer1.forward(flattened_data);
     //     relu_layer1.forward(affine_layer1.output);
@@ -237,13 +139,10 @@ int main(){
     //     relu_layer3.forward(affine_layer3.output);
     //     softmax_layer.forward(relu_layer3.output);
 
-    //     // std::cout << "label: " << dat.label << std::endl;
-    //     // std::cout << std::endl;
-
-    //     int max_index = 0;
+    //     int max_index = -INFINITY;
     //     float max_value = 0;
     //     for (int i = 0; i < 10; ++i){
-    //         if (relu_layer3.output(i) > max_value){
+    //         if (softmax_layer.output(i) > max_value){
     //             max_value = softmax_layer.output(i);
     //             max_index = i;
     //         }
@@ -252,14 +151,168 @@ int main(){
     //         correct++;
     //     }
     // }
-    // std::cout << "accuracy: " << (float)correct / batchs[0].data.size() << std::endl;
+    // std::cout << "accuracy: " << (float)correct / 100 << std::endl;
 
-    // layer.forward(flattened_data);
 
-    // auto& output = layer.output;
+    // // auto& data = batchs[0].data[0];
 
-    // for (int i = 0; i < 10; ++i){
-    //     std::cout << output(i) << std::endl;
-    // }
-    return 0;
+    // // auto flattened_data = utils::to_vector(data);
+    // // for (auto& val : flattened_data){
+    // //     val -= 0.5;
+    // // }
+    // // affine_layer1.forward(flattened_data);
+    // // std::cout << "affine_layer1.output" << std::endl;
+    // // std::cout << affine_layer1.output << std::endl;
+    // // relu_layer1.forward(affine_layer1.output);
+    // // std::cout << "relu_layer1.output" << std::endl;
+    // // std::cout << relu_layer1.output << std::endl;
+    // // affine_layer2.forward(relu_layer1.output);
+    // // std::cout << "affine_layer2.output" << std::endl;
+    // // std::cout << affine_layer2.output << std::endl;
+    // // relu_layer2.forward(affine_layer2.output);
+    // // std::cout << "relu_layer2.output" << std::endl;
+    // // std::cout << relu_layer2.output << std::endl;
+    // // affine_layer3.forward(relu_layer2.output);
+    // // std::cout << "affine_layer3.output" << std::endl;
+    // // std::cout << affine_layer3.output << std::endl;
+    // // relu_layer3.forward(affine_layer3.output);
+    // // std::cout << "relu_layer3.output" << std::endl;
+    // // std::cout << relu_layer3.output << std::endl;
+    // // softmax_layer.forward(relu_layer3.output);
+    // // std::cout << "softmax_layer.output" << std::endl;
+    // // std::cout << softmax_layer.output << std::endl;
+
+    // // // return 0;
+
+    // // std::cout << "start training" << std::endl;
+
+    // // int correct = 0;
+    // // for (auto& dat : batchs[0].data){
+    // //     auto flattened_data = utils::to_vector(dat);
+    // //     affine_layer1.forward(flattened_data);
+    // //     relu_layer1.forward(affine_layer1.output);
+    // //     affine_layer2.forward(relu_layer1.output);
+    // //     relu_layer2.forward(affine_layer2.output);
+    // //     affine_layer3.forward(relu_layer2.output);
+    // //     relu_layer3.forward(affine_layer3.output);
+
+    // //     int max_index = 0;
+    // //     float max_value = 0;
+    // //     for (int i = 0; i < 10; ++i){
+    // //         if (relu_layer3.output(i) > max_value){
+    // //             max_value = softmax_layer.output(i);
+    // //             max_index = i;
+    // //         }
+    // //     }
+    // //     if (max_index == dat.label){
+    // //         correct++;
+    // //     }
+    // // }
+    // // std::cout << "accuracy: " << (float)correct / batchs[0].data.size() << std::endl;
+    
+    // // std::fstream log_file;
+    // // log_file.open("log_loss.csv", std::ios::out);
+
+    // // double softmax_loss_sum = 0;
+    // // for (int i = 0; i < 500; i++){
+    // //     for (auto& dat : batchs[0].data){
+    // //         auto flattened_data = utils::to_vector(dat);
+    // //         affine_layer1.forward(flattened_data);
+    // //         relu_layer1.forward(affine_layer1.output);
+    // //         affine_layer2.forward(relu_layer1.output);
+    // //         relu_layer2.forward(affine_layer2.output);
+    // //         affine_layer3.forward(relu_layer2.output);
+    // //         relu_layer3.forward(affine_layer3.output);
+    // //         softmax_layer.forward(relu_layer3.output);
+
+    // //         Eigen::Matrix<float, 10, 1> grad;
+    // //         grad << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    // //         grad(dat.label) = 1;
+    // //         softmax_layer.calc_loss(grad);
+    // //         softmax_loss_sum += softmax_layer.loss;
+    // //         grad = softmax_layer.output - grad;
+    // //         relu_layer3.backward(grad);
+    // //         affine_layer3.backward(relu_layer3.grad);
+    // //         relu_layer2.backward(affine_layer3.grad);
+    // //         affine_layer2.backward(relu_layer2.grad);
+    // //         relu_layer1.backward(affine_layer2.grad);
+    // //         affine_layer1.backward(relu_layer1.grad);
+    // //         static int count = 0;
+    // //         std::cout << "count:" << count++ << "\r";
+    // //     }
+    // //     affine_layer1.update();
+    // //     affine_layer2.update();
+    // //     affine_layer3.update();
+    // //     log_file << softmax_loss_sum / batchs[i % 10].data.size() << std::endl;
+    // //     softmax_loss_sum = 0;
+    // //     std::cout << "batch" << i << " finished" << std::endl;
+    // // }
+
+    // // flattened_data = utils::to_vector(data);
+    // // for (auto& val : flattened_data){
+    // //     val -= 0.5;
+    // // }
+    // // std::cout << "input" << std::endl;
+    // // std::cout << flattened_data.transpose() << std::endl;
+    // // affine_layer1.forward(flattened_data);
+    // // std::cout << "affine_layer1.output" << std::endl;
+    // // std::cout << affine_layer1.output.transpose() << std::endl;
+    // // relu_layer1.forward(affine_layer1.output);
+    // // std::cout << "relu_layer1.output" << std::endl;
+    // // std::cout << relu_layer1.output.transpose() << std::endl;
+    // // affine_layer2.forward(relu_layer1.output);
+    // // std::cout << "affine_layer2.output" << std::endl;
+    // // std::cout << affine_layer2.output.transpose() << std::endl;
+    // // relu_layer2.forward(affine_layer2.output);
+    // // std::cout << "relu_layer2.output" << std::endl;
+    // // std::cout << relu_layer2.output.transpose() << std::endl;
+    // // affine_layer3.forward(relu_layer2.output);
+    // // std::cout << "affine_layer3.output" << std::endl;
+    // // std::cout << affine_layer3.output.transpose() << std::endl;
+    // // relu_layer3.forward(affine_layer3.output);
+    // // std::cout << "relu_layer3.output" << std::endl;
+    // // std::cout << relu_layer3.output.transpose() << std::endl;
+    // // softmax_layer.forward(relu_layer3.output);
+    // // std::cout << "softmax_layer.output" << std::endl;
+    // // std::cout << softmax_layer.output.transpose() << std::endl;
+
+    // // // return 0;
+
+
+    // // correct = 0;
+    // // for (auto& dat : batchs[0].data){
+    // //     auto flattened_data = utils::to_vector(dat);
+    // //     affine_layer1.forward(flattened_data);
+    // //     relu_layer1.forward(affine_layer1.output);
+    // //     affine_layer2.forward(relu_layer1.output);
+    // //     relu_layer2.forward(affine_layer2.output);
+    // //     affine_layer3.forward(relu_layer2.output);
+    // //     relu_layer3.forward(affine_layer3.output);
+    // //     softmax_layer.forward(relu_layer3.output);
+
+    // //     // std::cout << "label: " << dat.label << std::endl;
+    // //     // std::cout << std::endl;
+
+    // //     int max_index = 0;
+    // //     float max_value = 0;
+    // //     for (int i = 0; i < 10; ++i){
+    // //         if (relu_layer3.output(i) > max_value){
+    // //             max_value = softmax_layer.output(i);
+    // //             max_index = i;
+    // //         }
+    // //     }
+    // //     if (max_index == dat.label){
+    // //         correct++;
+    // //     }
+    // // }
+    // // std::cout << "accuracy: " << (float)correct / batchs[0].data.size() << std::endl;
+
+    // // layer.forward(flattened_data);
+
+    // // auto& output = layer.output;
+
+    // // for (int i = 0; i < 10; ++i){
+    // //     std::cout << output(i) << std::endl;
+    // // }
+    // return 0;
 }

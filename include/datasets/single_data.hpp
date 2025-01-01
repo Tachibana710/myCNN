@@ -10,6 +10,6 @@ struct SingleData
 {
     Eigen::Matrix<T, Width, Height> data;
     int label;
-    std::vector<double> desired_output;
+    Eigen::MatrixX<T> desired_output;
 };
 }

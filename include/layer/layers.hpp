@@ -33,6 +33,7 @@ public:
     }
     virtual void forward(Eigen::MatrixX<T> signal) = 0;
     virtual void backward(Eigen::MatrixX<T> signal) = 0;
+    virtual void update(){};
 };
 
 template <typename T> requires std::is_floating_point_v<T>
@@ -78,7 +79,7 @@ public:
         this->grad = weights.transpose() * signal;
     }
 
-    void update(){
+    void update() override {
         weights -= params::learning_rate * grad_weights / batch_size;
         grad_weights.setZero();
         batch_size = 0;
@@ -87,44 +88,45 @@ public:
     
 };
 
+template <typename T> requires std::is_floating_point_v<T>
+class OutputLayer : public Layer<T> {
+public:
+    OutputLayer(int input_dim, int output_dim) : Layer<T>(input_dim, output_dim){}
+    double loss;
+    virtual void calc_loss(Eigen::MatrixX<T> desired_output) = 0;
+};
+
 
 template <typename T> requires std::is_floating_point_v<T>
-class SoftMaxLayer : public Layer<T> {
+class SoftMaxLayer : public OutputLayer<T> {
 public:
-
-    Eigen::MatrixX<T> input;
-    Eigen::MatrixX<T> output;
 
     const int dim;
 
-    SoftMaxLayer(int input_dim) : Layer<T>(input_dim, input_dim), dim(input_dim){
-        input = Eigen::MatrixX<T>::Zero(input_dim, 1);
-        output = Eigen::MatrixX<T>::Zero(input_dim, 1);
-    }
+    SoftMaxLayer(int input_dim) : OutputLayer<T>(input_dim, input_dim), dim(input_dim){}
 
-    double loss;
 
     void forward(Eigen::MatrixX<T> signal) override {
         this->input = signal;
         T sum = 0;
-        T max = input.maxCoeff();
+        T max = this->input.maxCoeff();
         for (int i = 0; i < dim; ++i){
-            sum += std::exp(input(i)-max);
+            sum += std::exp(this->input(i)-max);
         }
         for (int i = 0; i < dim; ++i){
-            output(i) = std::exp(input(i)-max) / sum;
+            this->output(i) = std::exp(this->input(i)-max) / sum;
         }
     }
 
     void backward(Eigen::MatrixX<T> grad) override {
-        this->grad = output - grad;
+        this->grad = this->output - grad;
     }
 
-    void calc_loss(Eigen::MatrixX<T> label){
-        loss = 0;
+    void calc_loss(Eigen::MatrixX<T> desired_output) override {
+        this->loss = 0;
         double eps = 1e-8;
         for (int i = 0; i < dim; ++i){
-            loss -= label(i) * std::log(output(i) + eps);
+            this->loss -= desired_output(i) * std::log(this->output(i) + eps);
         }
     }
 };
@@ -133,32 +135,25 @@ template <typename T> requires std::is_floating_point_v<T>
 class ReLULayer : public Layer<T> {
 public:
 
-    ReLULayer(int input_dim) : Layer<T>(input_dim, input_dim), dim(input_dim){
-        input = Eigen::MatrixX<T>::Zero(input_dim, 1);
-        output = Eigen::MatrixX<T>::Zero(input_dim, 1);
-        grad = Eigen::MatrixX<T>::Zero(input_dim, 1);
-    }
+    ReLULayer(int input_dim) : Layer<T>(input_dim, input_dim), dim(input_dim){}
 
-    Eigen::MatrixX<T> input;
-    Eigen::MatrixX<T> output;
-    Eigen::MatrixX<T> grad;
     const int dim;
 
     void forward(Eigen::MatrixX<T> input_) override {
         this->input = input_;
         for (int i = 0; i < dim; ++i){
-            if (input(i) > 0){
-                output(i) = input_(i);
+            if (this->input(i) > 0){
+                this->output(i) = input_(i);
             } else {
                 // output(i) = 0.01 * input_(i);
-                output(i) = 0;
+                this->output(i) = 0;
             }
         }
     }
 
     void backward(Eigen::MatrixX<T> grad_) override {
         for (int i = 0; i < dim; ++i){
-            if (input(i) > 0){
+            if (this->input(i) > 0){
                 this->grad(i) = grad_(i);
             } else {
                 // this->grad(i) = 0.01 * grad_(i);
