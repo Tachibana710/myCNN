@@ -9,7 +9,8 @@ template <typename T, int Width, int Height, int Channel>
 struct SingleData
 {
     // Eigen::Matrix<T, Width, Height> data;
-    std::array<Eigen::Matrix<T, Width, Height>, Channel> data;
+    // std::array<Eigen::Matrix<T, Width, Height>, Channel> data;
+    std::array<Eigen::MatrixX<T>, Channel> data;
     int label;
     Eigen::MatrixX<T> desired_output;
 };

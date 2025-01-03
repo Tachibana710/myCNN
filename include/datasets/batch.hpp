@@ -5,7 +5,7 @@
 
 
 #include "datasets/single_data.hpp"
-#include "datasets/load_data.hpp"
+// #include "datasets/load_data.hpp"
 
 
 namespace datasets
@@ -26,22 +26,24 @@ struct DataPool
 
     DataPool(std::string images_path, std::string labels_path)
     {
-        auto images = std::move(loadMNISTImages<T>(images_path));
-        auto labels = std::move(loadMNISTLabels(labels_path));
-        int num_images = images.size();
-        if (num_images != labels.size())
-        {
-            throw std::runtime_error("Number of images and labels do not match");
-        }
+        // auto images = std::move(loadMNISTImages<T>(images_path));
+        // auto labels = std::move(loadMNISTLabels(labels_path));
+        // int num_images = images.size();
+        // if (num_images != labels.size())
+        // {
+        //     throw std::runtime_error("Number of images and labels do not match");
+        // }
 
-        for (int i = 0; i < num_images; ++i)
-        {
-            SingleData<T, Width, Height, 1> single_data;
-            single_data.data = std::move(images[i]);
-            single_data.label = std::move(labels[i]);
-            data.push_back(single_data);
-        }
+        // for (int i = 0; i < num_images; ++i)
+        // {
+        //     SingleData<T, Width, Height, 1> single_data;
+        //     single_data.data = std::move(images[i]);
+        //     single_data.label = std::move(labels[i]);
+        //     data.push_back(single_data);
+        // }
     }
+
+    DataPool() = default;
 };
 
 // template <typename T, int Width, int Height, int BatchNum>
