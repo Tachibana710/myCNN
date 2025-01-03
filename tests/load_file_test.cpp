@@ -12,13 +12,13 @@ int main(){
     std::string dataset_path = base_path + "/../datasets/mnist";
     std::string train_images_path = dataset_path + "/train-images.idx3-ubyte";
     std::string train_labels_path = dataset_path + "/train-labels.idx1-ubyte";
-    auto data_pool = datasets::DataPool<double, 28, 28>(train_images_path, train_labels_path);
+    auto data_pool = datasets::DataPool<double, 28, 28, 1>(train_images_path, train_labels_path);
 
     // auto batchs = datasets::generate_batches<double, 28, 28, 10>(train_images_path, train_labels_path);
 
     for (int i = 0; i < 28; ++i){
         for (int j = 0; j < 28; ++j){
-            if (data_pool.data[0].data(i, j) > 0.5){
+            if (data_pool.data[0].data[0](i, j) > 0.5){
                 std::cout << "■";
             } else {
                 std::cout << "□";

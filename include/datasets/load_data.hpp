@@ -23,7 +23,7 @@ T readBigEndian(std::ifstream& stream) {
 
 // MNIST画像データを読み込む
 template<class T> requires std::is_floating_point_v<T>
-inline std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> loadMNISTImages(const std::string& filePath) {
+inline std::vector<std::array<Eigen::Matrix<T, 28, 28>,1>> loadMNISTImages(const std::string& filePath) {
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file: " + filePath);
@@ -40,11 +40,11 @@ inline std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> loadMNISTIm
     }
 
     // 画像データの読み込み
-    std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> images(numImages, Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>(numRows, numCols));
+    std::vector<std::array<Eigen::Matrix<T, 28, 28>,1>> images(numImages, {{Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>(numRows, numCols)}});
     for (int i = 0; i < numImages; ++i) {
         for (int r = 0; r < numRows; ++r) {
             for (int c = 0; c < numCols; ++c) {
-                images[i](r, c) = static_cast<unsigned char>(file.get()) / 255.0; // 正規化
+                images[i][0](r, c) = static_cast<unsigned char>(file.get()) / 255.0; // 正規化
             }
         }
     }

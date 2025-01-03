@@ -11,17 +11,17 @@
 namespace datasets
 {
 
-template <typename T, int Width, int Height, int BatchSize>
+template <typename T, int Width, int Height, int Channel, int BatchSize>
 struct Batch
 {
     // std::vector<SingleData<T, Width, Height>> data;
-    std::array<SingleData<T, Width, Height>, BatchSize> data;
+    std::array<SingleData<T, Width, Height, Channel>, BatchSize> data;
 };
 
-template <typename T, int Width, int Height>
+template <typename T, int Width, int Height, int Channel>
 struct DataPool
 {
-    std::vector<SingleData<T, Width, Height>> data;
+    std::vector<SingleData<T, Width, Height, Channel>> data;
 
 
     DataPool(std::string images_path, std::string labels_path)
@@ -36,7 +36,7 @@ struct DataPool
 
         for (int i = 0; i < num_images; ++i)
         {
-            SingleData<T, Width, Height> single_data;
+            SingleData<T, Width, Height, 1> single_data;
             single_data.data = std::move(images[i]);
             single_data.label = std::move(labels[i]);
             data.push_back(single_data);
@@ -68,10 +68,10 @@ struct DataPool
 //     return std::move(batchs);
 // }
 
-template <typename T, int Width, int Height, int BatchSize>
+template <typename T, int Width, int Height, int Channel, int BatchSize>
 inline void generate_batch(
-    Batch<T, Width, Height, BatchSize>& batch,
-    DataPool<T, Width, Height>& data_pool)
+    Batch<T, Width, Height, Channel, BatchSize>& batch,
+    DataPool<T, Width, Height, Channel>& data_pool)
 {
     std::random_device seed_gen;
     std::default_random_engine engine(seed_gen());

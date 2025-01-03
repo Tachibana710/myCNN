@@ -14,7 +14,7 @@
 namespace network{
 
 
-template <typename T, int Width, int Height> requires std::is_floating_point_v<T>
+template <typename T, int Width, int Height, int Channel> requires std::is_floating_point_v<T>
 class Network {
 public:
     std::vector<std::shared_ptr<layer::Layer<T>>> layers;
@@ -27,7 +27,7 @@ public:
         this->load_model(json_path);
     }
 
-    Eigen::VectorX<T> forward(datasets::SingleData<T, Width, Height> data){
+    Eigen::VectorX<T> forward(datasets::SingleData<T, Width, Height, Channel> data){
         auto flattened_data = utils::to_vector(data);
         layers[0]->forward(flattened_data);
         for (int i = 1; i < layers.size(); ++i){
@@ -44,7 +44,7 @@ public:
     }
 
     template <int BatchSize>
-    double train(datasets::Batch<T, Width, Height, BatchSize> batch){
+    double train(datasets::Batch<T, Width, Height, Channel, BatchSize> batch){
         double loss_sum = 0;
         for (auto& dat : batch.data){
             auto output = forward(dat);
@@ -61,7 +61,7 @@ public:
         return loss_sum / batch.data.size();
     }
 
-    Eigen::VectorX<T> predict(datasets::SingleData<T, Width, Height> data){
+    Eigen::VectorX<T> predict(datasets::SingleData<T, Width, Height, Channel> data){
         auto flattened_data = utils::to_vector(data);
         layers[0]->forward(flattened_data);
         for (int i = 1; i < layers.size(); ++i){
