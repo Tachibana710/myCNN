@@ -13,5 +13,11 @@ struct SingleData
     std::array<Eigen::MatrixX<T>, Channel> data;
     int label;
     Eigen::MatrixX<T> desired_output;
+
+    SingleData(){
+        for (int i=0; i<Channel; i++){
+            data[i] = Eigen::MatrixX<T>::Zero(Width, Height);
+        }
+    }
 };
 }

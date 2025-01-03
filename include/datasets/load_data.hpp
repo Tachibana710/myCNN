@@ -63,20 +63,28 @@ namespace datasets
 // MNISTラベルデータを読み込む
 std::vector<int> loadMNISTLabels(const std::string& filePath);
 
-inline DataPool<int,480,640,3> loadJson(const std::string& dirPath){
+inline DataPool<float,480,640,3> loadJson(const std::string& dirPath){
     std::vector<std::string> filenames;
     for (const auto& entry : std::filesystem::directory_iterator(dirPath)){
         filenames.push_back(entry.path().string());
     }
 
-    DataPool<int,480,640,3> data_pool;
+    DataPool<float,480,640,3> data_pool;
 
     // 生データをEigen::Matrixに変換
     for (int i = 0; i < filenames.size(); ++i) {
-        auto& single_data = data_pool.data[i];
+        // auto single_data = SingleData<float,480,640,3>();
+        auto single_data = std::make_shared<SingleData<float,480,640,3>>();
+        // auto& single_data = data_pool.data[i];
         nlohmann::json jsonData;
         std::ifstream file(filenames[i]);
+
+        jsonData = nlohmann::json::parse(file);
+
         // Base64デコード
+        std::cout << filenames[i] << std::endl;
+        // std::cout << jsonData["data"] << std::endl;
+        // std::cout << jsonData["height"] << std::endl;
         std::string decoded_data = base64_decode(jsonData["data"].get<std::string>());
 
         // デコード結果を生データに変換
@@ -84,13 +92,16 @@ inline DataPool<int,480,640,3> loadJson(const std::string& dirPath){
         for (int channel = 0; channel < 3; ++channel) {
             for (int row = 0; row < 480; ++row) {
                 for (int col = 0; col < 640; ++col) {
-                    single_data.data[channel](row, col) = raw_data[(row * 640 + col) * 3 + channel];
+                    // std::cout << raw_data.at((row * 640 + col) * 3 + channel) << std::endl;
+                    single_data->data[channel](row, col) = raw_data.at((row * 640 + col) * 3 + channel) / 255.0;
                 }
             }
         }
 
-        single_data.desired_output = Eigen::MatrixX<int>::Zero(1, 1);
-        single_data.desired_output << jsonData["target"][0], jsonData["target"][1];
+        single_data->desired_output = Eigen::VectorX<float>::Zero(2);
+        single_data->desired_output << jsonData["target_value"][0], jsonData["target_value"][1];
+
+        data_pool.data.push_back(std::move(single_data));
         
     }
 

@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <random>
-
+#include <memory>
 
 #include "datasets/single_data.hpp"
 // #include "datasets/load_data.hpp"
@@ -15,13 +15,13 @@ template <typename T, int Width, int Height, int Channel, int BatchSize>
 struct Batch
 {
     // std::vector<SingleData<T, Width, Height>> data;
-    std::array<SingleData<T, Width, Height, Channel>, BatchSize> data;
+    std::array<std::shared_ptr<SingleData<T, Width, Height, Channel>>, BatchSize> data;
 };
 
 template <typename T, int Width, int Height, int Channel>
 struct DataPool
 {
-    std::vector<SingleData<T, Width, Height, Channel>> data;
+    std::vector<std::shared_ptr<SingleData<T, Width, Height, Channel>>> data;
 
 
     DataPool(std::string images_path, std::string labels_path)
@@ -77,11 +77,12 @@ inline void generate_batch(
 {
     std::random_device seed_gen;
     std::default_random_engine engine(seed_gen());
-    std::uniform_int_distribution<int> dist(0, data_pool.data.size());
+    std::uniform_int_distribution<int> dist(0, data_pool.data.size()-1);
 
     for (int i = 0; i < BatchSize; ++i)
     {
-        batch.data[i] = data_pool.data[dist(engine)];
+        int index = dist(engine);
+        batch.data[i] = data_pool.data[index];
     }
 }
 } // namespace datasets

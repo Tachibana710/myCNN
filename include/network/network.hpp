@@ -28,7 +28,7 @@ public:
         this->load_model(json_path);
     }
 
-    Eigen::VectorX<T> forward(datasets::SingleData<T, Width, Height, Channel> data){
+    Eigen::VectorX<T> forward(std::shared_ptr<datasets::SingleData<T, Width, Height, Channel>>& data){
         auto flattened_data = utils::to_vector(data);
         layers[0]->forward(flattened_data);
         for (int i = 1; i < layers.size(); ++i){
@@ -51,10 +51,10 @@ public:
             auto output = forward(dat);
 
             std::shared_ptr<layer::OutputLayer<T>> output_layer = std::dynamic_pointer_cast<layer::OutputLayer<T>>(layers.back());
-            output_layer->calc_loss(dat.desired_output);
+            output_layer->calc_loss(dat->desired_output);
             loss_sum += output_layer->loss;
 
-            backward(dat.desired_output);
+            backward(dat->desired_output);
         }
         for (auto& layer : layers){
             layer->update();
@@ -62,7 +62,7 @@ public:
         return loss_sum / batch.data.size();
     }
 
-    Eigen::VectorX<T> predict(datasets::SingleData<T, Width, Height, Channel> data){
+    Eigen::VectorX<T> predict(std::shared_ptr<datasets::SingleData<T, Width, Height, Channel>> data){
         auto flattened_data = utils::to_vector(data);
         layers[0]->forward(flattened_data);
         for (int i = 1; i < layers.size(); ++i){

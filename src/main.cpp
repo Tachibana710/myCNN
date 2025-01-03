@@ -3,6 +3,7 @@
 #include <eigen3/Eigen/Dense>
 
 #include "datasets/batch.hpp"
+#include "datasets/load_data.hpp"
 
 #include "layer/layers.hpp"
 #include "utils/to_vector.hpp"
@@ -18,18 +19,20 @@ int main(){
     std::string train_images_path = dataset_path + "/train-images.idx3-ubyte";
     std::string train_labels_path = dataset_path + "/train-labels.idx1-ubyte";
 
-    datasets::DataPool<float, 28, 28, 1> data_pool(train_images_path, train_labels_path);
+    // datasets::DataPool<float, 28, 28, 1> data_pool(train_images_path, train_labels_path);
+
+    datasets::DataPool<float, 480, 640, 3> data_pool = datasets::loadJson("/home/taka/mech/jishu_pro/jishupro_ws/src/recognition_pkg/scripts/dataset");
 
     // create network
 
-    auto my_network = network::Network<float, 28, 28, 1>({
-        std::make_shared<layer::AffineLayer<float>>(28*28, 50),
+    auto my_network = network::Network<float, 480, 640, 3>({
+        std::make_shared<layer::AffineLayer<float>>(480*640*3, 50),
         std::make_shared<layer::ReLULayer<float>>(50),
         std::make_shared<layer::AffineLayer<float>>(50, 100),
         std::make_shared<layer::ReLULayer<float>>(100),
-        std::make_shared<layer::AffineLayer<float>>(100, 10),
-        std::make_shared<layer::ReLULayer<float>>(10),
-        std::make_shared<layer::SoftMaxLayer<float>>(10)
+        std::make_shared<layer::AffineLayer<float>>(100, 2),
+        std::make_shared<layer::ReLULayer<float>>(2),
+        std::make_shared<layer::SoftMaxLayer<float>>(2)
     });
 
     // auto my_network = network::Network<float, 28, 28, 1>("model.json");
@@ -40,14 +43,14 @@ int main(){
     log_file.open("log_loss.csv", std::ios::out);
     log_file << "loss" << std::endl;
 
-    datasets::Batch<float, 28, 28, 1, 100> batch;
+    datasets::Batch<float, 480, 640, 3, 10> batch;
 
     for (int i=0; i < 10000; i++){
-        datasets::generate_batch<float, 28, 28, 1, 100>(batch, data_pool);
-        for (auto& dat : batch.data){
-            dat.desired_output = Eigen::MatrixX<float>::Zero(10, 1);
-            dat.desired_output(dat.label) = 1;
-        }
+        datasets::generate_batch<float, 480, 640, 3, 10>(batch, data_pool);
+        // for (auto& dat : batch.data){
+        //     dat.desired_output = Eigen::MatrixX<float>::Zero(10, 1);
+        //     dat.desired_output(dat.label) = 1;
+        // }
         double loss = my_network.train(batch);
         log_file << loss << std::endl;
         std::cout << "batch " << i << " finished.\r" << std::flush;
@@ -60,7 +63,7 @@ int main(){
     // accuracy check
 
     int correct = 0;
-    datasets::generate_batch<float, 28, 28, 1, 100>(batch, data_pool);
+    datasets::generate_batch<float, 480, 640, 3, 10>(batch, data_pool);
     for (auto& dat : batch.data){
         auto output = my_network.predict(dat);
         int max_index = 0;
@@ -71,11 +74,11 @@ int main(){
                 max_index = i;
             }
         }
-        if (max_index == dat.label){
+        if (max_index == dat->label){
             correct++;
         }
     }
-    std::cout << "accuracy: " << (float)correct / 100 << std::endl;
+    std::cout << "accuracy: " << (float)correct / 10 << std::endl;
 
     return 0;
 }

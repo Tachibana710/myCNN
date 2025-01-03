@@ -18,7 +18,7 @@ int main(){
 
     for (int i = 0; i < 28; ++i){
         for (int j = 0; j < 28; ++j){
-            if (data_pool.data[0].data[0](i, j) > 0.5){
+            if (data_pool.data[0]->data[0](i, j) > 0.5){
                 std::cout << "■";
             } else {
                 std::cout << "□";
@@ -27,6 +27,6 @@ int main(){
         }
         std::cout << std::endl;
     }
-    std::cout << "label: " << data_pool.data[0].label << std::endl;
+    std::cout << "label: " << data_pool.data[0]->label << std::endl;
     return 0;
 }
