@@ -99,7 +99,9 @@ inline DataPool<float,480,640,3> loadJson(const std::string& dirPath){
         }
 
         single_data->desired_output = Eigen::VectorX<float>::Zero(2);
-        single_data->desired_output << jsonData["target_value"][0], jsonData["target_value"][1];
+        single_data->desired_output << (float)jsonData["target_value"][0] / 480.0, (float)jsonData["target_value"][1] / 640.0;
+        // single_data->desired_output[0] = single_data->desired_output[0] / 480.0;
+        // single_data->desired_output[1] = single_data->desired_output[1] / 640.0;
 
         data_pool.data.push_back(std::move(single_data));
         

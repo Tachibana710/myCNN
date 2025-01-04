@@ -84,13 +84,24 @@ public:
          
 };
 
+
+
 template <typename T> requires std::is_floating_point_v<T>
-class ReLULayer : public Layer<T> {
+class OutputLayer : public Layer<T> {
+public:
+    OutputLayer(int input_dim, int output_dim) : Layer<T>(input_dim, output_dim){}
+    double loss;
+    virtual void calc_loss(Eigen::MatrixX<T> desired_output) = 0;
+};
+
+template <typename T> requires std::is_floating_point_v<T>
+// class ReLULayer : public Layer<T> {
+class ReLULayer : public OutputLayer<T> {
 public:
 
     const int dim;
 
-    ReLULayer(int input_dim) : Layer<T>(input_dim, input_dim), dim(input_dim){
+    ReLULayer(int input_dim) : OutputLayer<T>(input_dim, input_dim), dim(input_dim){
         this->name = "ReLULayer";
     }
 
@@ -103,6 +114,7 @@ public:
                 this->output(i) = 0;
             }
         }
+        std::cout << "ReLU output: " << this->output << std::endl;
     }
 
     void backward(Eigen::MatrixX<T> grad_) override {
@@ -114,14 +126,14 @@ public:
             }
         }
     }
-};
 
-template <typename T> requires std::is_floating_point_v<T>
-class OutputLayer : public Layer<T> {
-public:
-    OutputLayer(int input_dim, int output_dim) : Layer<T>(input_dim, output_dim){}
-    double loss;
-    virtual void calc_loss(Eigen::MatrixX<T> desired_output) = 0;
+    void calc_loss(Eigen::MatrixX<T> desired_output) override {
+        this->loss = 0;
+        for (int i = 0; i < dim; ++i){
+            this->loss += 0.5 * std::pow(desired_output(i) - this->output(i), 2);
+        }
+    }
+
 };
 
 
@@ -161,4 +173,120 @@ public:
     }
 };
 
+template <typename T> requires std::is_floating_point_v<T>
+class SigmoidLayer : public OutputLayer<T> {
+public:
+
+    const int dim;
+
+    SigmoidLayer(int input_dim) : OutputLayer<T>(input_dim, input_dim), dim(input_dim){
+        this->name = "SigmoidLayer";
+    }
+
+    void forward(Eigen::MatrixX<T> signal) override {
+        this->input = signal;
+        for (int i = 0; i < dim; ++i){
+            this->output(i) = 1 / (1 + std::exp(-this->input(i)));
+        }
+    }
+
+    void backward(Eigen::MatrixX<T> grad) override {
+        for (int i = 0; i < dim; ++i){
+            this->grad(i) = this->output(i) * (1 - this->output(i)) * grad(i);
+        }
+        // this->grad = this->output.cwiseProduct(1 - this->output).cwiseProduct(grad);
+    }
+
+    void calc_loss(Eigen::MatrixX<T> desired_output) override {
+        this->loss = 0;
+        for (int i = 0; i < dim; ++i){
+            this->loss += 0.5 * std::pow(desired_output(i) - this->output(i), 2);
+        }
+    }
+};
+
+template <typename T> requires std::is_floating_point_v<T>
+class LinearOutputLayer : public OutputLayer<T> {
+public:
+
+    const int dim;
+
+    LinearOutputLayer(int input_dim) : OutputLayer<T>(input_dim, input_dim), dim(input_dim){
+        this->name = "LinearOutputLayer";
+    }
+
+    void forward(Eigen::MatrixX<T> signal) override {
+        this->input = signal;
+        this->output = this->input;
+    }
+
+    void backward(Eigen::MatrixX<T> grad) override {
+        this->grad = grad;
+    }
+
+    void calc_loss(Eigen::MatrixX<T> desired_output) override {
+        this->loss = 0;
+        for (int i = 0; i < dim; ++i){
+            this->loss += 0.5 * std::pow(desired_output(i) - this->output(i), 2);
+        }
+    }
+};
+
+
+
+template <typename T> requires std::is_floating_point_v<T>
+class Layer2d {
+public:
+    virtual void forward(Eigen::MatrixX<T> signal) = 0;
+    virtual void backward(Eigen::MatrixX<T> signal) = 0;
+
+    Eigen::MatrixX<T> input;
+    Eigen::MatrixX<T> output;
+
+};
+
+
+
+
+template <typename T> requires std::is_floating_point_v<T>
+class ConvolutionLayer : public Layer2d<T> {
+public:
+    std::string name;
+
+    Eigen::MatrixX<T> kernel;
+    std::pair<int, int> kernel_size;
+    int stride;
+    std::pair<int, int> input_dim;
+    // std::pair<int, int> output_dim;
+
+    ConvolutionLayer(std::pair<int, int> input_dim,int stride, Eigen::MatrixX<T> ker) : Layer2d<T>(){
+        this->name = "ConvolutionLayer";
+        this->kernel = ker;
+        this->kernel_size = std::make_pair(kernel.rows(), kernel.cols());
+        this->stride = stride;
+        this->input_dim = input_dim;
+        // this->output_dim = std::make_pair(input_dim.first - kernel_size.first + 1, input_dim.second - kernel_size.second + 1);
+    }
+
+    void forward(Eigen::MatrixX<T> signal) override {
+        this->input = signal;
+
+        Eigen::MatrixX<T> output = Eigen::MatrixX<T>::Zero(
+            (this->input_dim.first - this->kernel_size.first) / this->stride + 1,
+            (this->input_dim.second - this->kernel_size.second) / this->stride + 1
+        );
+        for (int i = 0; i < this->input_dim.first - this->kernel_size.first + 1 - this->stride; i+=this->stride){
+            for (int j = 0; j < this->input_dim.second - this->kernel_size.second + 1 - this->stride; j+=this->stride){
+                output(i / this->stride, j / this->stride) = (this->input.block(i, j, this->kernel_size.first, this->kernel_size.second).cwiseProduct(this->kernel)).sum();
+            }
+        }
+
+        this->output = output;
+    }
+
+    void backward(Eigen::MatrixX<T> signal) override {
+        // this->grad = signal;
+    }
+
+};
 }

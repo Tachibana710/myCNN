@@ -18,10 +18,13 @@ namespace network{
 template <typename T, int Width, int Height, int Channel> requires std::is_floating_point_v<T>
 class Network {
 public:
+    std::vector<std::shared_ptr<layer::Layer2d<T>>> layers2d;
     std::vector<std::shared_ptr<layer::Layer<T>>> layers;
+    
 
-    Network(std::vector<std::shared_ptr<layer::Layer<T>>> layers_){
-        layers = layers_;
+    Network(std::vector<std::shared_ptr<layer::Layer2d<T>>> layers2d_,std::vector<std::shared_ptr<layer::Layer<T>>> layers_){
+        this->layers2d = layers2d_;
+        this->layers = layers_;
     }
 
     Network(std::string json_path){
@@ -29,8 +32,19 @@ public:
     }
 
     Eigen::VectorX<T> forward(std::shared_ptr<datasets::SingleData<T, Width, Height, Channel>>& data){
-        auto flattened_data = utils::to_vector(data);
-        layers[0]->forward(flattened_data);
+        // auto data_matrix = utils::to_2dmatrix(data);
+        // layers2d[0]->forward(data_matrix);
+        // for (int i = 1; i < layers2d.size(); ++i){
+        //     layers2d[i]->forward(layers2d[i-1]->output);
+        // }
+        // auto data_vector = utils::to_vector(layers2d.back()->output);
+
+        auto data_vector = utils::to_vector(data);
+
+
+        // std::cout << "data_vector: " << data_vector.size() << std::endl;
+        // auto flattened_data = utils::to_vector(data);
+        layers[0]->forward(data_vector);
         for (int i = 1; i < layers.size(); ++i){
             layers[i]->forward(layers[i-1]->output);
         }
@@ -54,7 +68,7 @@ public:
             output_layer->calc_loss(dat->desired_output);
             loss_sum += output_layer->loss;
 
-            backward(dat->desired_output);
+            backward(output - dat->desired_output);
         }
         for (auto& layer : layers){
             layer->update();
@@ -63,8 +77,17 @@ public:
     }
 
     Eigen::VectorX<T> predict(std::shared_ptr<datasets::SingleData<T, Width, Height, Channel>> data){
-        auto flattened_data = utils::to_vector(data);
-        layers[0]->forward(flattened_data);
+        // auto flattened_data = utils::to_vector(data);
+        // layers[0]->forward(flattened_data);
+
+        // auto data_matrix = utils::to_2dmatrix(data);
+        // layers2d[0]->forward(data_matrix);
+        // for (int i = 1; i < layers2d.size(); ++i){
+        //     layers2d[i]->forward(layers2d[i-1]->output);
+        // }
+        // auto data_vector = utils::to_vector(layers2d.back()->output);
+        auto data_vector = utils::to_vector(data);
+        layers[0]->forward(data_vector);
         for (int i = 1; i < layers.size(); ++i){
             layers[i]->forward(layers[i-1]->output);
         }
