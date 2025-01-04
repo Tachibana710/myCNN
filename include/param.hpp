@@ -2,7 +2,7 @@
 
 namespace params{
 
-inline double learning_rate = 0.0001;
+inline double learning_rate = 0.001;
 
 }
 

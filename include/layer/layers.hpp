@@ -114,7 +114,7 @@ public:
                 this->output(i) = 0;
             }
         }
-        std::cout << "ReLU output: " << this->output << std::endl;
+        // std::cout << "ReLU output: " << this->output << std::endl;
     }
 
     void backward(Eigen::MatrixX<T> grad_) override {
