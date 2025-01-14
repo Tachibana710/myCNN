@@ -12,6 +12,14 @@ add_executable(main src/main.cpp ${SRC_FILES})
 find_package(Eigen3 REQUIRED)
 target_link_libraries(main Eigen3::Eigen)
 
+if (DEFINED LOAD_JSON)
+    set(LOAD_JSON ON)
+endif()
+
+if (DEFINED SAVE_JSON)
+    set(SAVE_JSON ON)
+endif()
+
 if (DEFINED TEST)
     add_executable(load_file_test tests/load_file_test.cpp ${SRC_FILES})
     target_link_libraries(load_file_test Eigen3::Eigen)

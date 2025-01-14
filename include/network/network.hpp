@@ -27,6 +27,8 @@ public:
         this->load_model(json_path);
     }
 
+    Network() = default;
+
     Eigen::VectorX<T> forward(datasets::SingleData<T, Width, Height, Channel> data){
         auto flattened_data = utils::to_vector(data);
         layers[0]->forward(flattened_data);
