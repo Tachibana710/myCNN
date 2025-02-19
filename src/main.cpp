@@ -12,7 +12,7 @@
 #include <chrono>
 #include <cstdlib>
 
-int main(){
+int main(int argc, char** argv){
 
     // load dataset
 
@@ -22,6 +22,13 @@ int main(){
     std::string train_labels_path = dataset_path + "/train-labels.idx1-ubyte";
 
     datasets::DataPool<float, 28, 28, 1> data_pool(train_images_path, train_labels_path);
+
+    double noise_ratio = 0.0;
+    if (argc > 1){
+        noise_ratio = std::stod(argv[1]);
+        data_pool.add_noise(noise_ratio);
+    }
+
     std::cout << data_pool.data.size() << " images loaded." << std::endl;
 
     // create network
@@ -97,6 +104,11 @@ int main(){
     }
     std::cout << "accuracy: " << (float)correct / cnt << std::endl;
     std::cout << "correct: " << correct << " / " << cnt << std::endl;
+
+    std::fstream record_accuracy_file;
+    record_accuracy_file.open("log_accuracy.csv", std::ios::out | std::ios::app);
+    record_accuracy_file << noise_ratio << "," << (float)correct / cnt << std::endl;
+    record_accuracy_file.close();
 
     return 0;
 }

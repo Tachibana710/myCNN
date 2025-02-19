@@ -16,6 +16,22 @@ struct Batch
 {
     // std::vector<SingleData<T, Width, Height>> data;
     std::array<SingleData<T, Width, Height, Channel>, BatchSize> data;
+
+    void add_noise(double noise_ratio){
+    std::random_device seed_gen;
+    std::default_random_engine engine(seed_gen());
+    std::uniform_real_distribution<float> noise_dist(0, 1);
+
+    for (auto& dat : data.data){
+        for (int i = 0; i < 28; ++i){
+            for (int j = 0; j < 28; ++j){
+                if (noise_dist(engine) < noise_ratio){
+                    dat.data(i, j) = noise_dist(engine);
+                }
+            }
+        }
+    }
+}
 };
 
 template <typename T, int Width, int Height, int Channel>
@@ -40,6 +56,22 @@ struct DataPool
             single_data.data = std::move(images[i]);
             single_data.label = std::move(labels[i]);
             data.push_back(single_data);
+        }
+    }
+
+    void add_noise(double noise_ratio){
+        std::random_device seed_gen;
+        std::default_random_engine engine(seed_gen());
+        std::uniform_real_distribution<float> noise_dist(0, 1);
+
+        for (auto& dat : data){
+            for (int i = 0; i < 28; ++i){
+                for (int j = 0; j < 28; ++j){
+                    if (noise_dist(engine) < noise_ratio){
+                        dat.data[0](i, j) = noise_dist(engine);
+                    }
+                }
+            }
         }
     }
 };
@@ -82,4 +114,5 @@ inline void generate_batch(
         batch.data[i] = data_pool.data[dist(engine)];
     }
 }
+
 } // namespace datasets
